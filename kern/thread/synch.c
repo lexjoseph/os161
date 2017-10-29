@@ -184,7 +184,7 @@ lock_destroy(struct lock *lock)
 	// add stuff here as needed
 	
 	//Ensure no thread is holding the lock before destroying it
-	KA2(lock -> thread_holding_lock == NULL);
+	KASSERT(lock -> thread_holding_lock == NULL);
 	
 	spinlock_cleanup(&lock -> splk_lk);
 
@@ -200,10 +200,10 @@ lock_acquire(struct lock *lock)
 {
     // Write this
 	
-	KA2(lock != NULL);
+	KASSERT(lock != NULL);
 
 	//Make sure the current thread is not in an interrupt
-	KA2(curthread -> t_in_interrupt == false);
+	KASSERT(curthread -> t_in_interrupt == false);
 
 	//Acquire the spinlock
 	spinlock_acquire(&lock -> splk_lk);
@@ -221,8 +221,8 @@ lock_acquire(struct lock *lock)
 	lock -> thread_holding_lock = curthread;
 	
 	//Ensure lock is set and correct thread has it
-	KA2(lock -> is_locked = true);
-	KA2(lock -> thread_holding_lock == curthread);
+	KASSERT(lock -> is_locked = true);
+	KASSERT(lock -> thread_holding_lock == curthread);
 	
 	spinlock_release(&lock -> splk_lk);
 
@@ -234,13 +234,13 @@ lock_release(struct lock *lock)
 {
     // Write this
 
-	KA2(NULL != lock);
+	KASSERT(NULL != lock);
 
 	//Must have lock in order to release it
 	spinlock_acquire(&lock -> splk_lk);
 	
 	//Ensure lock is locked
-	KA2(lock -> is_locked = true);
+	KASSERT(lock -> is_locked = true);
 	
 	//Unlock before release
 	lock -> is_locked = false;
@@ -336,9 +336,9 @@ cv_wait(struct cv *cv, struct lock *lock)
 {
         // Write this
 
-		KA2(NULL != cv);
+		KASSERT(NULL != cv);
 
-		KA2(!curthread -> t_in_interrupt);
+		KASSERT(!curthread -> t_in_interrupt);
 				
 		//If lock is held, put thread to sleep and release the lock
 		if(lock_do_i_hold(lock))
@@ -366,7 +366,7 @@ cv_signal(struct cv *cv, struct lock *lock)
 {
         // Write this
 		
-		KA2(NULL != cv);
+		KASSERT(NULL != cv);
 		spinlock_acquire(&cv -> splk_cv);
 
 		//Wake up one thread that's sleeping on this CV
@@ -384,7 +384,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 {
 	// Write this
 
-	KA2(NULL != cv);
+	KASSERT(NULL != cv);
 
 	spinlock_acquire(&cv-> splk_cv);
 
