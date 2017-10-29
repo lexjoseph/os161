@@ -76,7 +76,9 @@ struct lock {
         char *lk_name;
 	struct wchan *lk_wchan;
 	struct spinlock lk_lock;
-	struct thread *volatile lk_holder;
+	struct thread * lk_thread;
+	struct cpu * lk_cpu;
+	volatile int lk_released;
 };
 
 struct lock *lock_create(const char *name);
@@ -114,7 +116,8 @@ void lock_destroy(struct lock *);
 
 struct cv {
         char *cv_name;
-	struct wchan *cv_wchan;
+        struct wchan *cv_wchan;
+        struct spinlock cv_lock;
 };
 
 struct cv *cv_create(const char *name);
@@ -139,3 +142,4 @@ void cv_broadcast(struct cv *cv, struct lock *lock);
 
 
 #endif /* _SYNCH_H_ */
+
