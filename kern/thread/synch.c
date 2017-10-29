@@ -29,71 +29,66 @@
 
 /*
  * Synchronization primitives.
- * See synch.h for specifications of the functions.
+ * The specifications of the functions are in synch.h.
  */
 
 #include <types.h>
 #include <lib.h>
-#include <synch.h>
+#include <spinlock.h>
+#include <wchan.h>
 #include <thread.h>
-#include <curthread.h>
-#include <machine/spl.h>
-
+#include <current.h>
+#include <synch.h>
 
 ////////////////////////////////////////////////////////////
 //
 // Semaphore.
 
-
 struct semaphore *
-sem_create(const char *namearg, int initial_count)
+sem_create(const char *name, unsigned initial_count)
 {
 	struct semaphore *sem;
 
-	assert(initial_count >= 0);
-
-	sem = kmalloc(sizeof(struct semaphore));
+	sem = kmalloc(sizeof(*sem));
 	if (sem == NULL) {
 		return NULL;
 	}
 
-	sem->name = kstrdup(namearg);
-	if (sem->name == NULL) {
+	sem->sem_name = kstrdup(name);
+	if (sem->sem_name == NULL) {
 		kfree(sem);
 		return NULL;
 	}
 
-	sem->count = initial_count;
+	sem->sem_wchan = wchan_create(sem->sem_name);
+	if (sem->sem_wchan == NULL) {
+		kfree(sem->sem_name);
+		kfree(sem);
+		return NULL;
+	}
+
+	spinlock_init(&sem->sem_lock);
+	sem->sem_count = initial_count;
+
 	return sem;
 }
 
 void
 sem_destroy(struct semaphore *sem)
 {
-	int spl;
-	assert(sem != NULL);
+	KASSERT(sem != NULL);
 
-	spl = splhigh();
-	assert(thread_hassleepers(sem)==0);
-	splx(spl);
-
-	/*
-	 * Note: while someone could theoretically start sleeping on
-	 * the semaphore after the above test but before we free it,
-	 * if they're going to do that, they can just as easily wait
-	 * a bit and start sleeping on the semaphore after it's been
-	 * freed. Consequently, there's not a whole lot of point in 
-	 * including the kfrees in the splhigh block, so we don't.
-	 */
-
-	kfree(sem->name);
+	/* wchan_cleanup will assert if anyone's waiting on it */
+	spinlock_cleanup(&sem->sem_lock);
+	wchan_destroy(sem->sem_wchan);
+	kfree(sem->sem_name);
 	kfree(sem);
 }
 
-void P(struct semaphore *sem)
+void
+P(struct semaphore *sem)
 {
-	int spl;
-	assert(sem != NULL);
+	KASSERT(sem != NULL);
 
 	/*
 	 * May not block in an interrupt handler.
@@ -101,192 +96,115 @@ void P(struct semaphore *sem)
 	 * For robustness, always check, even if we can actually
 	 * complete the P without blocking.
 	 */
-	assert(in_interrupt==0);
+	KASSERT(curthread->t_in_interrupt == false);
 
-	spl = splhigh();
-	while (sem->count==0) {
-		thread_sleep(sem);
+	/* Use the semaphore spinlock to protect the wchan as well. */
+	spinlock_acquire(&sem->sem_lock);
+	while (sem->sem_count == 0) {
+		/*
+		 *
+		 * Note that we don't maintain strict FIFO ordering of
+		 * threads going through the semaphore; that is, we
+		 * might "get" it on the first try even if other
+		 * threads are waiting. Apparently according to some
+		 * textbooks semaphores must for some reason have
+		 * strict ordering. Too bad. :-)
+		 *
+		 * Exercise: how would you implement strict FIFO
+		 * ordering?
+		 */
+		wchan_sleep(sem->sem_wchan, &sem->sem_lock);
 	}
-  if (sem->count < 0)
-    kprintf("\nGuys, this is sem->count: %d\n",sem->count);
-	assert(sem->count>0);
-	sem->count--;
-	splx(spl);
+	KASSERT(sem->sem_count > 0);
+	sem->sem_count--;
+	spinlock_release(&sem->sem_lock);
 }
 
-void V(struct semaphore *sem)
+void
+V(struct semaphore *sem)
 {
-	int spl;
-	assert(sem != NULL);
-	spl = splhigh();
-	sem->count++;
-	assert(sem->count>0);
-	thread_wakeup(sem);
-	splx(spl);
+	KASSERT(sem != NULL);
+
+	spinlock_acquire(&sem->sem_lock);
+
+	sem->sem_count++;
+	KASSERT(sem->sem_count > 0);
+	wchan_wakeone(sem->sem_wchan, &sem->sem_lock);
+
+	spinlock_release(&sem->sem_lock);
 }
 
 ////////////////////////////////////////////////////////////
 //
 // Lock.
 
-int test_and_set(struct lock *lock) 
-{ // atomic in hardware
-  int old = lock->held;
-  lock->held = 1;
-  return old;
-}
-
-struct lock * lock_create(const char *name)
+struct lock *
+lock_create(const char *name)
 {
 	struct lock *lock;
 
-	lock = kmalloc(sizeof(struct lock));
+	lock = kmalloc(sizeof(*lock));
 	if (lock == NULL) {
 		return NULL;
 	}
 
-	lock->name = kstrdup(name);
-	lock->held=0;
-	if (lock->name == NULL) {
+	lock->lk_name = kstrdup(name);
+	if (lock->lk_name == NULL) {
 		kfree(lock);
 		return NULL;
 	}
 
+	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
 
 	// add stuff here as needed
-  lock->held = 0;
-	
+
 	return lock;
 }
 
-void lock_destroy(struct lock *lock)
+void
+lock_destroy(struct lock *lock)
 {
-	assert(lock != NULL);
+	KASSERT(lock != NULL);
 
 	// add stuff here as needed
-  int spl;
-	spl = splhigh();
-	assert(thread_hassleepers(lock)==0);
-	splx(spl);
-	
-	kfree(lock->name);
+
+	kfree(lock->lk_name);
 	kfree(lock);
 }
 
-void lock_acquire(struct lock *lock)
-{
-	// Write this
-	int spl;
-	assert(lock != NULL);
-	spl = splhigh();
-	while (test_and_set(lock)) {
-	  thread_sleep(lock);
-	}
-	splx(spl);
-}
-
-
 void
-lock_acquire2(struct lock *lock1,struct lock *lock2)
+lock_acquire(struct lock *lock)
 {
-	// Write this
-	int spl;
-	assert(lock1 != NULL);
-	assert(lock2 != NULL);
-	spl = splhigh();
-	while (1) {
-		if (test_and_set(lock1)==0) {
-			if(test_and_set(lock2)==0) break;
-			
-			else {
-			  lock_release(lock1);
-			  thread_sleep(lock2);
-			}			
-		}
-		else thread_sleep(lock1);
-	}
-	splx(spl);
-}
+	/* Call this (atomically) before waiting for a lock */
+	//HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
 
-void
-lock_acquire3(struct lock *lock1,struct lock *lock2,struct lock *lock3)
-{
 	// Write this
-	int spl;
-	assert(lock1 != NULL);
-	assert(lock2 != NULL);
-	assert(lock3 != NULL);
-	spl = splhigh();
-	while (1) {
-		if (test_and_set(lock1)==0) {
-		  if(test_and_set(lock2)==0) {
-				if(test_and_set(lock3)==0) break;
-				else {
-			    lock_release(lock1);
-					lock_release(lock2);
-					thread_sleep(lock3);
-			  }
-      }
-			
-			else {
-			lock_release(lock1);
-			thread_sleep(lock2);
-			}
-    }
-		else thread_sleep(lock1);
-	}
-	splx(spl);
-}
 
+	(void)lock;  // suppress warning until code gets written
+
+	/* Call this (atomically) once the lock is acquired */
+	//HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
+}
 
 void
 lock_release(struct lock *lock)
-{	
-	int spl;
-	spl = splhigh();
-	lock->held=0;
-	thread_wakeup(lock);
-	splx(spl);
+{
+	/* Call this (atomically) when the lock is released */
+	//HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
+
+	// Write this
+
+	(void)lock;  // suppress warning until code gets written
 }
 
-void
-lock_release2(struct lock *lock1,struct lock *lock2)
-{	
-	int spl;
-	spl = splhigh();
-	lock1->held=0;
-	lock2->held=0;
-	thread_wakeup(lock1);
-	thread_wakeup(lock2);
-	splx(spl);
-}
-void
-lock_release3(struct lock *lock1,struct lock *lock2,struct lock *lock3)
-{	
-	int spl;
-	spl = splhigh();
-	lock1->held=0;
-	lock2->held=0;
-	lock3->held=0;
-	thread_wakeup(lock1);
-	thread_wakeup(lock2);
-	thread_wakeup(lock3);
-
-	splx(spl);
-}
-
-
-int
+bool
 lock_do_i_hold(struct lock *lock)
 {
-  //if (!lock->held) 
-	//return 0;
-  return lock->held;
+	// Write this
 
-  //if (lock->holder == curthread) 
-	//return 1;
-  //else return 0;
-	return lock->held;
+	(void)lock;  // suppress warning until code gets written
+
+	return true; // dummy until code gets written
 }
 
 ////////////////////////////////////////////////////////////
@@ -294,61 +212,58 @@ lock_do_i_hold(struct lock *lock)
 // CV
 
 
-struct cv * cv_create(const char *name)
+struct cv *
+cv_create(const char *name)
 {
 	struct cv *cv;
 
-	cv = kmalloc(sizeof(struct cv));
+	cv = kmalloc(sizeof(*cv));
 	if (cv == NULL) {
 		return NULL;
 	}
 
-	cv->name = kstrdup(name);
-	if (cv->name==NULL) {
+	cv->cv_name = kstrdup(name);
+	if (cv->cv_name==NULL) {
 		kfree(cv);
 		return NULL;
 	}
-	
+
 	// add stuff here as needed
-	
+
 	return cv;
 }
 
-void cv_destroy(struct cv *cv)
+void
+cv_destroy(struct cv *cv)
 {
-	assert(cv != NULL);
+	KASSERT(cv != NULL);
 
 	// add stuff here as needed
-	
-	kfree(cv->name);
+
+	kfree(cv->cv_name);
 	kfree(cv);
 }
 
-void cv_wait(struct cv *cv, struct lock *lock)
+void
+cv_wait(struct cv *cv, struct lock *lock)
 {
-	int spl;
-	lock_release(lock);
-	spl = splhigh();
-	thread_sleep(cv);
-	splx(spl);
-	lock_acquire(lock);
-	
+	// Write this
+	(void)cv;    // suppress warning until code gets written
+	(void)lock;  // suppress warning until code gets written
 }
 
-void cv_signal(struct cv *cv, struct lock *lock)
+void
+cv_signal(struct cv *cv, struct lock *lock)
 {
-	int spl;
-	spl = splhigh();
-	thread_wakeupone(cv);
-	splx(spl);
-  (void) lock;
+	// Write this
+	(void)cv;    // suppress warning until code gets written
+	(void)lock;  // suppress warning until code gets written
 }
 
-void cv_broadcast(struct cv *cv, struct lock *lock)
+void
+cv_broadcast(struct cv *cv, struct lock *lock)
 {
-	int spl;
-	spl = splhigh();
-	thread_wakeup(cv);
-	splx(spl);
-  (void) lock;
+	// Write this
+	(void)cv;    // suppress warning until code gets written
+	(void)lock;  // suppress warning until code gets written
 }
