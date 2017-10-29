@@ -34,6 +34,7 @@
  * Header file for synchronization primitives.
  */
 
+
 #include <spinlock.h>
 
 /*
@@ -46,10 +47,10 @@ struct semaphore {
 	char *sem_name;
 	struct wchan *sem_wchan;
 	struct spinlock sem_lock;
-	volatile int sem_count;
+	volatile unsigned sem_count;
 };
 
-struct semaphore *sem_create(const char *name, int initial_count);
+struct semaphore *sem_create(const char *name, unsigned initial_count);
 void sem_destroy(struct semaphore *);
 
 /*
@@ -72,18 +73,14 @@ void V(struct semaphore *);
  * (should be) made internally.
  */
 struct lock {
-	char *lk_name;
-        struct wchan *lock_wchan;
-        struct spinlock lock_lock;
-        volatile int lock;
-        struct thread *holder;
-  
-	// add what you need here
-	// (don't forget to mark things volatile as needed)
+        char *lk_name;
+        HANGMAN_LOCKABLE(lk_hangman);   /* Deadlock detector hook. */
+        // add what you need here
+        // (don't forget to mark things volatile as needed)
 };
 
 struct lock *lock_create(const char *name);
-void lock_release(struct lock *);
+void lock_destroy(struct lock *);
 
 /*
  * Operations:
@@ -97,8 +94,8 @@ void lock_release(struct lock *);
  * These operations must be atomic. You get to write them.
  */
 void lock_acquire(struct lock *);
+void lock_release(struct lock *);
 bool lock_do_i_hold(struct lock *);
-void lock_destroy(struct lock *);
 
 
 /*
@@ -116,10 +113,9 @@ void lock_destroy(struct lock *);
  */
 
 struct cv {
-	char *cv_name;
-	// add what you need here
-	// (don't forget to mark things volatile as needed)
-        struct wchan *cv_wchan;
+        char *cv_name;
+        // add what you need here
+        // (don't forget to mark things volatile as needed)
 };
 
 struct cv *cv_create(const char *name);
@@ -142,5 +138,40 @@ void cv_wait(struct cv *cv, struct lock *lock);
 void cv_signal(struct cv *cv, struct lock *lock);
 void cv_broadcast(struct cv *cv, struct lock *lock);
 
+/*
+ * Reader-writer locks.
+ *
+ * When the lock is created, no thread should be holding it. Likewise,
+ * when the lock is destroyed, no thread should be holding it.
+ *
+ * The name field is for easier debugging. A copy of the name is
+ * (should be) made internally.
+ */
+
+struct rwlock {
+        char *rwlock_name;
+        // add what you need here
+        // (don't forget to mark things volatile as needed)
+};
+
+struct rwlock * rwlock_create(const char *);
+void rwlock_destroy(struct rwlock *);
+
+/*
+ * Operations:
+ *    rwlock_acquire_read  - Get the lock for reading. Multiple threads can
+ *                          hold the lock for reading at the same time.
+ *    rwlock_release_read  - Free the lock. 
+ *    rwlock_acquire_write - Get the lock for writing. Only one thread can
+ *                           hold the write lock at one time.
+ *    rwlock_release_write - Free the write lock.
+ *
+ * These operations must be atomic. You get to write them.
+ */
+
+void rwlock_acquire_read(struct rwlock *);
+void rwlock_release_read(struct rwlock *);
+void rwlock_acquire_write(struct rwlock *);
+void rwlock_release_write(struct rwlock *);
 
 #endif /* _SYNCH_H_ */
