@@ -47,10 +47,10 @@ struct semaphore {
         char *sem_name;
 	struct wchan *sem_wchan;
 	struct spinlock sem_lock;
-        volatile int sem_count;
+        volatile unsigned sem_count;
 };
 
-struct semaphore *sem_create(const char *name, int initial_count);
+struct semaphore *sem_create(const char *name, unsigned initial_count);
 void sem_destroy(struct semaphore *);
 
 /*
@@ -74,15 +74,12 @@ void V(struct semaphore *);
  */
 struct lock {
         char *lk_name;
-	struct wchan *lk_wchan;
-	struct spinlock lk_lock;
-	struct thread * lk_thread;
-	struct cpu * lk_cpu;
-	volatile int lk_released;
+        // add what you need here
+        // (don't forget to mark things volatile as needed)
 };
 
 struct lock *lock_create(const char *name);
-void lock_acquire(struct lock *);
+void lock_destroy(struct lock *);
 
 /*
  * Operations:
@@ -90,14 +87,14 @@ void lock_acquire(struct lock *);
  *                   same time.
  *    lock_release - Free the lock. Only the thread holding the lock may do
  *                   this.
- *    lock_do_i_hold - Return true if the current thread holds the lock; 
+ *    lock_do_i_hold - Return true if the current thread holds the lock;
  *                   false otherwise.
  *
  * These operations must be atomic. You get to write them.
  */
+void lock_acquire(struct lock *);
 void lock_release(struct lock *);
 bool lock_do_i_hold(struct lock *);
-void lock_destroy(struct lock *);
 
 
 /*
@@ -116,8 +113,8 @@ void lock_destroy(struct lock *);
 
 struct cv {
         char *cv_name;
-        struct wchan *cv_wchan;
-        struct spinlock cv_lock;
+        // add what you need here
+        // (don't forget to mark things volatile as needed)
 };
 
 struct cv *cv_create(const char *name);
@@ -130,7 +127,7 @@ void cv_destroy(struct cv *);
  *    cv_signal    - Wake up one thread that's sleeping on this CV.
  *    cv_broadcast - Wake up all threads sleeping on this CV.
  *
- * For all three operations, the current thread must hold the lock passed 
+ * For all three operations, the current thread must hold the lock passed
  * in. Note that under normal circumstances the same lock should be used
  * on all operations with any particular CV.
  *
@@ -142,4 +139,3 @@ void cv_broadcast(struct cv *cv, struct lock *lock);
 
 
 #endif /* _SYNCH_H_ */
-
