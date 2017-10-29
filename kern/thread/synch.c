@@ -156,20 +156,21 @@ lock_create(const char *name)
 
 	// add stuff here
 	
-	//Initialize lock queue
 	lock -> lk_wchan = wchan_create(lock -> lk_name);
 
 	if(lock -> lk_wchan == NULL)
 	{
 		kfree(lock -> lk_name);
+
+
 		kfree(lock);
 		return NULL;
 	}
 
-	//Initialize spinlock 
 	spinlock_init(&lock -> splk_lk);
 	
 	lock -> is_locked = false;
+	//lock -> is_locked = true;
 	lock -> thread_holding_lock = NULL;
 	
     return lock;
@@ -183,7 +184,7 @@ lock_destroy(struct lock *lock)
 	// add stuff here as needed
 	
 	//Ensure no thread is holding the lock before destroying it
-	DEBUGASSERT(lock -> thread_holding_lock == NULL);
+	KA2(lock -> thread_holding_lock == NULL);
 	
 	spinlock_cleanup(&lock -> splk_lk);
 
@@ -199,10 +200,10 @@ lock_acquire(struct lock *lock)
 {
     // Write this
 	
-	DEBUGASSERT(lock != NULL);
+	KA2(lock != NULL);
 
 	//Make sure the current thread is not in an interrupt
-	DEBUGASSERT(curthread -> t_in_interrupt == false);
+	KA2(curthread -> t_in_interrupt == false);
 
 	//Acquire the spinlock
 	spinlock_acquire(&lock -> splk_lk);
@@ -220,8 +221,8 @@ lock_acquire(struct lock *lock)
 	lock -> thread_holding_lock = curthread;
 	
 	//Ensure lock is set and correct thread has it
-	DEBUGASSERT(lock -> is_locked = true);
-	DEBUGASSERT(lock -> thread_holding_lock == curthread);
+	KA2(lock -> is_locked = true);
+	KA2(lock -> thread_holding_lock == curthread);
 	
 	spinlock_release(&lock -> splk_lk);
 
@@ -233,13 +234,13 @@ lock_release(struct lock *lock)
 {
     // Write this
 
-	DEBUGASSERT(lock != NULL);
+	KA2(NULL != lock);
 
 	//Must have lock in order to release it
 	spinlock_acquire(&lock -> splk_lk);
 	
 	//Ensure lock is locked
-	DEBUGASSERT(lock -> is_locked = true);
+	KA2(lock -> is_locked = true);
 	
 	//Unlock before release
 	lock -> is_locked = false;
@@ -278,13 +279,17 @@ cv_create(const char *name)
         struct cv *cv;
 
         cv = kmalloc(sizeof(*cv));
-        if (cv == NULL) {
+        if (NULL == cv) 
+        {
                 return NULL;
         }
 
         cv->cv_name = kstrdup(name);
-        if (cv -> cv_name == NULL) {
+        if (NULL == cv -> cv_name)
+         {
+
                 kfree(cv);
+
                 return NULL;
         }
 
@@ -298,13 +303,14 @@ cv_create(const char *name)
 		if (cv -> cv_wchan == NULL) 
 		{
 			kfree(cv -> cv_name);
+
 			kfree(cv);
 			
 			return NULL;
 		}
 		
 		//Initialize spinlock
-		spinlock_init(&cv -> splk_cv);
+		spinlock_init( &cv -> splk_cv);
 
         return cv;
 }
@@ -312,11 +318,11 @@ cv_create(const char *name)
 void
 cv_destroy(struct cv *cv)
 {
-        KASSERT(cv != NULL);
+        KASSERT(NULL != cv);
 
         // add stuff here as needed
 
-		spinlock_cleanup(&cv -> splk_cv);
+		spinlock_cleanup( &cv -> splk_cv);
 		
 		//Destroy wait channel, must be empty and unlocked
 		wchan_destroy(cv -> cv_wchan);
@@ -330,8 +336,9 @@ cv_wait(struct cv *cv, struct lock *lock)
 {
         // Write this
 
-		DEBUGASSERT(cv != NULL);
-		DEBUGASSERT(curthread -> t_in_interrupt == false);
+		KA2(NULL != cv);
+
+		KA2(!curthread -> t_in_interrupt);
 				
 		//If lock is held, put thread to sleep and release the lock
 		if(lock_do_i_hold(lock))
@@ -359,7 +366,7 @@ cv_signal(struct cv *cv, struct lock *lock)
 {
         // Write this
 		
-		DEBUGASSERT(cv != NULL);
+		KA2(NULL != cv);
 		spinlock_acquire(&cv -> splk_cv);
 
 		//Wake up one thread that's sleeping on this CV
@@ -377,7 +384,7 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 {
 	// Write this
 
-	DEBUGASSERT(cv != NULL);
+	KA2(NULL != cv);
 
 	spinlock_acquire(&cv-> splk_cv);
 
