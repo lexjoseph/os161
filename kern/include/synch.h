@@ -1,6 +1,4 @@
-/*
- * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
- *	The President and Fellows of Harvard College.
+/*	The President and Fellows of Harvard College.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,13 +42,13 @@
  * internally.
  */
 struct semaphore {
-        char *sem_name;
+    char *sem_name;
 	struct wchan *sem_wchan;
 	struct spinlock sem_lock;
-        volatile int sem_count;
+    volatile unsigned sem_count;
 };
 
-struct semaphore *sem_create(const char *name, int initial_count);
+struct semaphore *sem_create(const char *name, unsigned initial_count);
 void sem_destroy(struct semaphore *);
 
 /*
@@ -73,17 +71,19 @@ void V(struct semaphore *);
  * (should be) made internally.
  */
 struct lock {
-        char *lk_name;
-		struct wchan  *lk_wchan;
-		struct spinlock lk_lock;
-		volatile struct thread *thread_with_lock;
-        volatile bool locked;
-        // add what you need here
-        // (don't forget to mark things volatile as needed)
+    char *lk_name;
+
+    // add what you need here
+    // (don't forget to mark things volatile as needed)
+	
+	struct wchan * lk_wchan; 			//Queue for processes to wait in
+	volatile bool is_locked;			//Is it locked
+	struct thread *thread_holding_lock;	//Owner of the lock
+	struct spinlock splk_lk;			//Protect the fields above
 };
 
 struct lock *lock_create(const char *name);
-void lock_acquire(struct lock *);
+void lock_destroy(struct lock *);
 
 /*
  * Operations:
@@ -91,14 +91,14 @@ void lock_acquire(struct lock *);
  *                   same time.
  *    lock_release - Free the lock. Only the thread holding the lock may do
  *                   this.
- *    lock_do_i_hold - Return true if the current thread holds the lock; 
+ *    lock_do_i_hold - Return true if the current thread holds the lock;
  *                   false otherwise.
  *
  * These operations must be atomic. You get to write them.
  */
+void lock_acquire(struct lock *);
 void lock_release(struct lock *);
 bool lock_do_i_hold(struct lock *);
-void lock_destroy(struct lock *);
 
 
 /*
@@ -117,8 +117,14 @@ void lock_destroy(struct lock *);
 
 struct cv {
         char *cv_name;
-        // add what you need here
-        // (don't forget to mark things volatile as needed)
+
+    // add what you need here
+    // (don't forget to mark things volatile as needed)
+	
+	//Condition variable wait channel 
+	struct wchan *cv_wchan;				//Queue for process to wait in
+
+	struct spinlock splk_cv;			//Spinlock to protect the queue
 };
 
 struct cv *cv_create(const char *name);
@@ -143,4 +149,3 @@ void cv_broadcast(struct cv *cv, struct lock *lock);
 
 
 #endif /* _SYNCH_H_ */
-
