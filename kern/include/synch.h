@@ -78,10 +78,10 @@ struct lock {
         // add what you need here
         // (don't forget to mark things volatile as needed)
 	
-	 volatile struct thread * lk_owner;  //ADDED current thread owning lock 
-   struct wchan lk_wchan;	//ADDED wait channel lock
+	  struct thread volatile lk_owner;  //ADDED current thread owning lock 
+   struct wchan* lk_wchan;	//ADDED wait channel lock
    struct spinlock lk_spinlk;	//ADDED lock's spinlock
-   volatile int lk_release;	//1 if released, 0 otherwise
+   volatile bool lk_free;	//1 if released, 0 otherwise
 };
 
 struct lock *lock_create(const char *name);
