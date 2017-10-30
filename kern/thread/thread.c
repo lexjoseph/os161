@@ -886,17 +886,16 @@ thread_yield(void)
 	thread_switch(S_READY, NULL, NULL);
 }
 
-/*void
+void
 thread_join(struct thread* to_join)
 {
-     Don't want to wait on null,
-     * Don't want to wait on a thread that's done executing 
+     
     if ( to_join->t_state == S_ZOMBIE || to_join == NULL) 
         return;
 
     to_join->parent_sem = sem_create(curthread->t_name, 0); 
-    P(to_join->parent_sem); // puts current thread (parent) to sleep
-}*/
+    P(to_join->parent_sem); 
+}
 ////////////////////////////////////////////////////////////
 
 /*
