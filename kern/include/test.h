@@ -56,7 +56,7 @@ int threadtest2(int, char **);
 int threadtest3(int, char **);
 int jointest(int, char **); //tt4
 int semtest(int, char **);
-int locktest(int, char 
+int locktest(int, char **);
 int cvtest(int, char **);
 int cvtest2(int, char **);
 
