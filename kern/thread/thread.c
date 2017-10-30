@@ -150,6 +150,8 @@ thread_create(const char *name)
 	thread->t_did_reserve_buffers = false;
 
 	/* If you add to struct thread, be sure to initialize here */
+        thread->parent_waiting = NULL;
+        thread->parent_sem = NULL;
 
 	return thread;
 }
@@ -493,7 +495,7 @@ thread_make_runnable(struct thread *target, bool already_have_lock)
  * The new thread is created in the process P. If P is null, the
  * process is inherited from the caller. It will start on the same CPU
  * as the caller, unless the scheduler intervenes first.
- */
+*/ 
 int
 thread_fork(const char *name,
 	    struct proc *proc,
@@ -549,6 +551,68 @@ thread_fork(const char *name,
 
 	return 0;
 }
+
+struct thread*
+thread_fork_with_possible_join(const char *name,
+	    struct proc *proc,
+	    void (*entrypoint)(void *data1, unsigned long data2),
+	    void *data1, unsigned long data2)
+{
+	struct thread *newthread;
+	int result;
+
+	newthread = thread_create(name);
+	if (newthread == NULL) {
+		return NULL;
+	}
+
+	/* Allocate a stack */
+	newthread->t_stack = kmalloc(STACK_SIZE);
+	if (newthread->t_stack == NULL) {
+		thread_destroy(newthread);
+		return NULL;
+	}
+	thread_checkstack_init(newthread);
+
+	/*
+	 * Now we clone various fields from the parent thread.
+	 */
+
+	/* Thread subsystem fields */
+	newthread->t_cpu = curthread->t_cpu;
+
+	/* Attach the new thread to its process */
+	if (proc == NULL) {
+		proc = curthread->t_proc;
+	}
+	result = proc_addthread(proc, newthread);
+	if (result) {
+		/* thread_destroy will clean up the stack */
+		thread_destroy(newthread);
+		return NULL;
+	}
+
+	/*
+	 * Because new threads come out holding the cpu runqueue lock
+	 * (see notes at bottom of thread_switch), we need to account
+	 * for the spllower() that will be done releasing it.
+	 */
+	newthread->t_iplhigh_count++;
+
+	/* Set up the switchframe so entrypoint() gets called */
+	switchframe_init(newthread, entrypoint, data1, data2);
+
+        /* Started writing here */
+        newthread->parent_waiting = curthread;
+        /* Stopped writing here */
+
+
+	/* Lock the current cpu's run queue and make the new thread runnable */
+	thread_make_runnable(newthread, false);
+
+	return newthread;
+}
+
 
 /*
  * High level, machine-independent context switch code.
@@ -618,6 +682,7 @@ thread_switch(threadstate_t newstate, struct wchan *wc, struct spinlock *lk)
 		spinlock_release(lk);
 		break;
 	    case S_ZOMBIE:
+
 		cur->t_wchan_name = "ZOMBIE";
 		threadlist_addtail(&curcpu->c_zombies, cur);
 		break;
@@ -781,6 +846,13 @@ thread_startup(void (*entrypoint)(void *data1, unsigned long data2),
 void
 thread_exit(void)
 {
+        /* For purposes of thread_join.
+         * If a parent is joining with its child thread,
+         * we need to wake up the parent */
+        if (curthread->parent_sem != NULL && curthread->parent_sem->sem_count <= 0)
+        {
+             V(curthread->parent_sem);
+        }
 	struct thread *cur;
 
 	cur = curthread;
@@ -814,6 +886,21 @@ thread_yield(void)
 	thread_switch(S_READY, NULL, NULL);
 }
 
+/* I wrote this */
+/* Idea is that it creates a sempahore as part of child thread,
+ * puts parent to sleep. Wakes it up in zombie part of thread switch.
+*/
+void
+thread_join(struct thread* to_join)
+{
+    /* Don't want to wait on null,
+     * Don't want to wait on a thread that's done executing */
+    if (to_join == NULL || to_join->t_state == S_ZOMBIE) 
+        return;
+
+    to_join->parent_sem = sem_create(curthread->t_name, 0); 
+    P(to_join->parent_sem); // puts current thread (parent) to sleep
+}
 ////////////////////////////////////////////////////////////
 
 /*
