@@ -176,7 +176,7 @@ jointest(int nargs, char** args)
                                                    join_test_child_thread, NULL, 0);
     }
     
-    kprintf("This shows with no join");
+    kprintf("This shows with no join\n");
  
     for (i = 0; i < 10; ++i)
     {
@@ -184,6 +184,6 @@ jointest(int nargs, char** args)
                                                    join_test_child_thread, NULL, 0);
         thread_join(join_with);
     }
-    kprintf("This shows when joins occured - complete");
+    kprintf("This shows when joins occured \n - complete\n");
     return 0;
 }
