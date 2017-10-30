@@ -42,10 +42,10 @@
  * internally.
  */
 struct semaphore {
-    char *sem_name;
+    	char *sem_name;
 	struct wchan *sem_wchan;
 	struct spinlock sem_lock;
-    volatile unsigned sem_count;
+   	 volatile unsigned sem_count;
 };
 
 struct semaphore *sem_create(const char *name, unsigned initial_count);
@@ -76,10 +76,14 @@ struct lock {
     // add what you need here
     // (don't forget to mark things volatile as needed)
 	
-	struct wchan * lk_wchan; 			//Queue for processes to wait in
-	volatile bool is_locked;			//Is it locked
-	struct thread *thread_holding_lock;	//Owner of the lock
-	struct spinlock splk_lk;			//Protect the fields above
+	struct wchan * lk_wchan;
+	//makes the process wait
+	
+	volatile bool is_locked; //locked
+	
+	struct thread *thread_holding_lock;	
+	struct spinlock splk_lk;
+	//for the stuff above
 };
 
 struct lock *lock_create(const char *name);
@@ -121,10 +125,11 @@ struct cv {
     // add what you need here
     // (don't forget to mark things volatile as needed)
 	
-	//Condition variable wait channel 
-	struct wchan *cv_wchan;				//Queue for process to wait in
+	
+	struct wchan *cv_wchan;	
+	//wait channel
 
-	struct spinlock splk_cv;			//Spinlock to protect the queue
+	struct spinlock splk_cv;		
 };
 
 struct cv *cv_create(const char *name);
