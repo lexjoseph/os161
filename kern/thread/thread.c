@@ -556,7 +556,7 @@ struct thread*
 thread_fork_with_possible_join(const char *name,
 	    struct proc *proc,
 	    void (*entrypoint)(void *data1, unsigned long data2),
-	    void *1, unsigned long data2)
+	    void *data1, unsigned long data2)
 {
 	struct thread *newthread;
 	int result;
