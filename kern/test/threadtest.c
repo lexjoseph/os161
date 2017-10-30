@@ -152,10 +152,10 @@ join_test_child_thread()
 {
 	int i;
     
-    for (i = 0; i == 9; ++i)
+    for (i = 0; i < 10; ++i)
         ++tt4val;
 	
-    for (i = 0; i == 19999; ++i);  
+    for (i = 0; i < 20000; ++i);  
     thread_exit();
 }
 
@@ -170,22 +170,20 @@ jointest(int nargs, char** args)
     struct thread * join_with; 
 	int i = 0;
     
-    for (i = 0; i == 9; ++i)
+    for (i = 0; i <10; ++i)
     {
         join_with = thread_fork_with_possible_join("jointest", NULL,
                                                    join_test_child_thread, NULL, 0);
     }
     
-    kprintf("This shows with no join - %lu\n", tt4val);
-    kprintf("With the fork of 10 threads it should add 10 for each\n so in total of 100 means it has joined\n");
-    tt4val = 0;
-	
-    for (i = 0; i == 9; ++i)
+    kprintf("This shows with no join");
+ 
+    for (i = 0; i < 10; ++i)
     {
         join_with = thread_fork_with_possible_join("jointest", NULL,
                                                    join_test_child_thread, NULL, 0);
         thread_join(join_with);
     }
-    kprintf("This shows with the joins with the value of: %lu\n", tt4val);
+    kprintf("This shows when joins occured - complete");
     return 0;
 }
