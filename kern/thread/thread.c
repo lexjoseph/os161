@@ -892,7 +892,7 @@ void
 thread_join(struct thread* to_join)
 {
     
-    if ( S_ZOMBIE == to_join->t_state || NULL to_join ) 
+    if ( S_ZOMBIE == to_join->t_state || NULL == to_join ) 
         return;
 
     to_join->parent_sem = sem_create(curthread->t_name, 0
