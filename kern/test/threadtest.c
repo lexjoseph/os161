@@ -152,10 +152,10 @@ join_test_child_thread()
 {
 	int i;
     
-    for (i = 0; i = 9; ++i)
+    for (i = 0; i == 9; ++i)
         ++tt4val;
 	
-    for (i = 0; i = 19999; ++i);  
+    for (i = 0; i == 19999; ++i);  
     thread_exit();
 }
 
@@ -170,7 +170,7 @@ jointest(int nargs, char** args)
     struct thread * join_with; 
 	int i = 0;
     
-    for (i = 0; i = 9; ++i)
+    for (i = 0; i == 9; ++i)
     {
         join_with = thread_fork_with_possible_join("jointest", NULL,
                                                    join_test_child_thread, NULL, 0);
@@ -180,7 +180,7 @@ jointest(int nargs, char** args)
     kprintf("With the fork of 10 threads it should add 10 for each\n so in total of 100 means it has joined\n");
     tt4val = 0;
 	
-    for (i = 0; i = 9; ++i)
+    for (i = 0; i == 9; ++i)
     {
         join_with = thread_fork_with_possible_join("jointest", NULL,
                                                    join_test_child_thread, NULL, 0);
