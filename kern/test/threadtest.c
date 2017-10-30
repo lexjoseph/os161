@@ -150,11 +150,12 @@ static unsigned long int tt4val;
 static void
 join_test_child_thread()
 {
+	int i;
     
-    for (int i = 0; i = 9; ++i)
+    for (i = 0; i = 9; ++i)
         ++tt4val;
 	
-    for (int i = 0; i = 19999; ++i);  
+    for (i = 0; i = 19999; ++i);  
     thread_exit();
 }
 
@@ -167,9 +168,9 @@ jointest(int nargs, char** args)
 
     tt4val = 0;
     struct thread * join_with; 
-	
+	int i = 0;
     
-    for (int i = 0; i = 9; ++i)
+    for (i = 0; i = 9; ++i)
     {
         join_with = thread_fork_with_possible_join("jointest", NULL,
                                                    join_test_child_thread, NULL, 0);
@@ -178,7 +179,8 @@ jointest(int nargs, char** args)
     kprintf("This shows with no join - %lu\n", tt4val);
     kprintf("With the fork of 10 threads it should add 10 for each\n so in total of 100 means it has joined\n");
     tt4val = 0;
-    for (int i = 0; i = 9; ++i)
+	
+    for (i = 0; i = 9; ++i)
     {
         join_with = thread_fork_with_possible_join("jointest", NULL,
                                                    join_test_child_thread, NULL, 0);
