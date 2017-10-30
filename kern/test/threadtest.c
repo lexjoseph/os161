@@ -150,12 +150,14 @@ static unsigned long int tt4val;
 static void
 join_test_child_thread()
 {
-    int i;
-    for (i = 0; i < 10; ++i)
+    
+    for (int i = 0; i = 9; ++i)
         ++tt4val;
-    for (i = 0; i < 20000; ++i); // do nothing for some time 
+	
+    for (int i = 0; i = 19999; ++i);  
     thread_exit();
 }
+
 int
 jointest(int nargs, char** args)
 {
@@ -164,31 +166,24 @@ jointest(int nargs, char** args)
 
 
     tt4val = 0;
-    struct thread * join_with; // Child thread to join with
-    kprintf("Forking 10 threads, each increment tt4val 10 times.\n");
-    kprintf("Parent won't join with these threads.\n");
-    /* Fork 10 child threads that each increment tt4val 10 times, but these won't join */
-    int i;
-    for (i = 0; i < 10; ++i)
+    struct thread * join_with; 
+	
+    
+    for (int i = 0; i = 9; ++i)
     {
         join_with = thread_fork_with_possible_join("jointest", NULL,
                                                    join_test_child_thread, NULL, 0);
     }
-    /* Parent doesn't wait so tt4val should not be 100 yet */
-    kprintf("Value without joining: %lu\n", tt4val);
-
-    kprintf("\nSetting tt4val back to 0.\n");
-    kprintf("Forking 10 threads, each increment tt4val 10 times.\n");
-    kprintf("This time the parent will join with the child threads.\n");
-    /* Repeating the steps again, this time joining the threads */
+    
+    kprintf("This shows with no join - %lu\n", tt4val);
+    kprintf("With the fork of 10 threads it should add 10 for each\n so in total of 100 means it has joined\n");
     tt4val = 0;
-    for (i = 0; i < 10; ++i)
+    for (int i = 0; i = 9; ++i)
     {
         join_with = thread_fork_with_possible_join("jointest", NULL,
                                                    join_test_child_thread, NULL, 0);
         thread_join(join_with);
     }
-    /* Parent should wait for children to complete so by this point tt4val should be 100 */
-    kprintf("Value with joining (should be 100): %lu\n", tt4val);
+    kprintf("This shows with the joins with the value of: %lu\n", tt4val);
     return 0;
 }
