@@ -556,7 +556,7 @@ struct thread*
 thread_fork_with_possible_join(const char *name,
 	    struct proc *proc,
 	    void (*entrypoint)(void *data1, unsigned long data2),
-	    void *data1, unsigned long data2)
+	    void *1, unsigned long data2)
 {
 	struct thread *newthread;
 	int result;
@@ -886,21 +886,17 @@ thread_yield(void)
 	thread_switch(S_READY, NULL, NULL);
 }
 
-/* I wrote this */
-/* Idea is that it creates a sempahore as part of child thread,
- * puts parent to sleep. Wakes it up in zombie part of thread switch.
-*/
-void
+/*void
 thread_join(struct thread* to_join)
 {
-    /* Don't want to wait on null,
-     * Don't want to wait on a thread that's done executing */
-    if (to_join == NULL || to_join->t_state == S_ZOMBIE) 
+     Don't want to wait on null,
+     * Don't want to wait on a thread that's done executing 
+    if ( to_join->t_state == S_ZOMBIE || to_join == NULL) 
         return;
 
     to_join->parent_sem = sem_create(curthread->t_name, 0); 
     P(to_join->parent_sem); // puts current thread (parent) to sleep
-}
+}*/
 ////////////////////////////////////////////////////////////
 
 /*
