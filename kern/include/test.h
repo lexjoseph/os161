@@ -54,9 +54,9 @@ int threadlisttest(int, char **);
 int threadtest(int, char **);
 int threadtest2(int, char **);
 int threadtest3(int, char **);
-int jointest(int, char **); /* AKA threadtest4, tt4 in menu */ 
+int jointest(int, char **); //tt4
 int semtest(int, char **);
-int locktest(int, char **);
+int locktest(int, char 
 int cvtest(int, char **);
 int cvtest2(int, char **);
 
