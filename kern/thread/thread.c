@@ -562,13 +562,13 @@ thread_fork_with_possible_join(const char *name,
 	int result;
 
 	newthread = thread_create(name);
-	if (newthread == NULL) {
+	if (NULL == newthread) {
 		return NULL;
 	}
 
 	/* Allocate a stack */
 	newthread->t_stack = kmalloc(STACK_SIZE);
-	if (newthread->t_stack == NULL) {
+	if (NULL == newthread->t_stack) {
 		thread_destroy(newthread);
 		return NULL;
 	}
@@ -582,7 +582,7 @@ thread_fork_with_possible_join(const char *name,
 	newthread->t_cpu = curthread->t_cpu;
 
 	/* Attach the new thread to its process */
-	if (proc == NULL) {
+	if (NULL == proc) {
 		proc = curthread->t_proc;
 	}
 	result = proc_addthread(proc, newthread);
@@ -846,10 +846,8 @@ thread_startup(void (*entrypoint)(void *data1, unsigned long data2),
 void
 thread_exit(void)
 {
-        /* For purposes of thread_join.
-         * If a parent is joining with its child thread,
-         * we need to wake up the parent */
-        if (curthread->parent_sem != NULL && curthread->parent_sem->sem_count <= 0)
+        //this for waking up the parent
+        if (curthread->parent_sem->sem_count <= 0 && curthread->parent_sem != NULL )
         {
              V(curthread->parent_sem);
         }
@@ -893,13 +891,13 @@ thread_yield(void)
 void
 thread_join(struct thread* to_join)
 {
-    /* Don't want to wait on null,
-     * Don't want to wait on a thread that's done executing */
-    if (to_join == NULL || to_join->t_state == S_ZOMBIE) 
+    
+    if ( S_ZOMBIE == to_join->t_state || NULL to_join ) 
         return;
 
-    to_join->parent_sem = sem_create(curthread->t_name, 0); 
-    P(to_join->parent_sem); // puts current thread (parent) to sleep
+    to_join->parent_sem = sem_create(curthread->t_name, 0
+    P(to_join->parent_sem); 
+	//puts the thread to sleep
 }
 ////////////////////////////////////////////////////////////
 
