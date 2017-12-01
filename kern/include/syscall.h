@@ -60,4 +60,6 @@ int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 void sys__exit(int code);
 
+int sys_open(const_userptr_t filename, int flags, mode_t mode, int *retval);
+
 #endif /* _SYSCALL_H_ */
