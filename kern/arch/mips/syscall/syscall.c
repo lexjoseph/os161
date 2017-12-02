@@ -30,12 +30,12 @@
 #include <types.h>
 #include <kern/errno.h>
 #include <kern/syscall.h>
-#include <endian.h>
+#include <endian.h> //added 
 #include <lib.h>
 #include <mips/trapframe.h>
 #include <thread.h>
 #include <current.h>
-#include <copyinout.h>
+#include <copyinout.h> //added
 #include <syscall.h>
 
 
@@ -116,8 +116,8 @@ syscall(struct trapframe *tf)
                 panic("Returning from exit\n");
                 break;
 
-            /* Sample cases: open and read */
-            case SYS_open:
+	    /* Add stuff here */////////////////////////////////
+	   case SYS_open:
                 err = sys_open(
                         (userptr_t)tf->tf_a0,
                         tf->tf_a1,
@@ -132,9 +132,25 @@ syscall(struct trapframe *tf)
                         tf->tf_a2,
                         &retval);
                 break;
-
-            /* Project 3:
-             * Add more for meld, close, and write . */
+	    case SYS_close:
+		err = sys_close(tf->tf_a0);
+		break;
+	 
+	    case SYS_write:
+		err = sys_write(tf->tf_a0, (userptr_t)
+			tf->tf_a1, tf->tf_a2, &retval);
+		break;
+	
+	    case SYS_meld:
+		err = sys_meld(
+			(userptr_t) tf->tf_a0, 
+		(userptr_t)tf->tf_a1, (userptr_t)tf->tf_a2, &retval);
+		break;	
+			////////////////////////////////////////////////////
+			//////////////////////////////////////////////
+			///////////////////////////////////////
+			///////////////////////////
+			//////////////////////
 
 	    default:
 		kprintf("Unknown syscall %d\n", callno);

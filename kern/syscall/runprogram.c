@@ -131,7 +131,7 @@ runprogram(char *progname)
 	if (result) {
 		return result;
 	}
-
+	
 	/* We should be a new process. */
 	KASSERT(proc_getas() == NULL);
 
@@ -192,4 +192,3 @@ runprogram(char *progname)
 	panic("enter_new_process returned\n");
 	return EINVAL;
 }
-

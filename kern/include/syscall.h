@@ -60,9 +60,15 @@ int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 void sys__exit(int code);
 
+
 int sys_open(const_userptr_t filename, int flags, mode_t mode, int *retval);
+
 int sys_read(int fd, userptr_t buf, size_t size, int *retval);
 
+int sys_close(int fd);
+
+int sys_write(int fd, userptr_t buf, size_t size, int *retval); // for meld
+int sys_meld(const_userptr_t pn1, const_userptr_t pn2, const_userptr_t pn3, int *retval); 
 /* You need to add more for sys_meld, sys_write, and sys_close */
 
 #endif /* _SYSCALL_H_ */
