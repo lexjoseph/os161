@@ -30,10 +30,12 @@
 #include <types.h>
 #include <kern/errno.h>
 #include <kern/syscall.h>
+#include <endian.h> //added 
 #include <lib.h>
 #include <mips/trapframe.h>
 #include <thread.h>
 #include <current.h>
+#include <copyinout.h> //added
 #include <syscall.h>
 
 
