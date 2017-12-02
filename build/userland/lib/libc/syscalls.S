@@ -180,4 +180,7 @@ SYSCALL(__settime, 114)
 SYSCALL(nanosleep, 115)
 SYSCALL(sync, 118)
 SYSCALL(reboot, 119)
+<<<<<<< HEAD
 SYSCALL(meld, 121)
+=======
+>>>>>>> b345e7b5d93fb9e3c4f645da8016d7fc82ea37cf

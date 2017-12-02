@@ -1,6 +1,4 @@
-/*
- * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
- *	The President and Fellows of Harvard College.
+/*	The President and Fellows of Harvard College.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,10 +42,10 @@
  * internally.
  */
 struct semaphore {
-        char *sem_name;
+    	char *sem_name;
 	struct wchan *sem_wchan;
 	struct spinlock sem_lock;
-        volatile unsigned sem_count;
+   	 volatile unsigned sem_count;
 };
 
 struct semaphore *sem_create(const char *name, unsigned initial_count);
@@ -73,11 +71,27 @@ void V(struct semaphore *);
  * (should be) made internally.
  */
 struct lock {
+<<<<<<< HEAD
         char *lk_name;
 	struct wchan *lk_wchan;
 	struct spinlock lk_lock;
 	struct thread *volatile lk_holder;
 
+=======
+    char *lk_name;
+
+    // add what you need here
+    // (don't forget to mark things volatile as needed)
+	
+	struct wchan * lk_wchan;
+	//makes the process wait
+	
+	volatile bool is_locked; //locked
+	
+	struct thread *thread_holding_lock;	
+	struct spinlock splk_lk;
+	//for the stuff above
+>>>>>>> b345e7b5d93fb9e3c4f645da8016d7fc82ea37cf
 };
 
 struct lock *lock_create(const char *name);
@@ -115,8 +129,15 @@ bool lock_do_i_hold(struct lock *);
 
 struct cv {
         char *cv_name;
-        // add what you need here
-        // (don't forget to mark things volatile as needed)
+
+    // add what you need here
+    // (don't forget to mark things volatile as needed)
+	
+	
+	struct wchan *cv_wchan;	
+	//wait channel
+
+	struct spinlock splk_cv;		
 };
 
 struct cv *cv_create(const char *name);

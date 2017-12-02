@@ -144,3 +144,46 @@ threadtest2(int nargs, char **args)
 
 	return 0;
 }
+
+static unsigned long int tt4val;
+
+static void
+join_test_child_thread()
+{
+	int i;
+    
+    for (i = 0; i < 10; ++i)
+        ++tt4val;
+	
+    for (i = 0; i < 20000; ++i);  
+    thread_exit();
+}
+
+int
+jointest(int nargs, char** args)
+{
+    (void)nargs;
+    (void)args;
+
+
+    tt4val = 0;
+    struct thread * join_with; 
+	int i = 0;
+    
+    for (i = 0; i <10; ++i)
+    {
+        join_with = thread_fork_with_possible_join("jointest", NULL,
+                                                   join_test_child_thread, NULL, 0);
+    }
+    
+    kprintf("This shows with no join\n");
+ 
+    for (i = 0; i < 10; ++i)
+    {
+        join_with = thread_fork_with_possible_join("jointest", NULL,
+                                                   join_test_child_thread, NULL, 0);
+        thread_join(join_with);
+    }
+    kprintf("This shows when joins occured \n - complete\n");
+    return 0;
+}

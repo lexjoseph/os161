@@ -109,6 +109,12 @@ struct thread {
 	bool t_did_reserve_buffers;	/* reserve_buffers() in effect */
 
 	/* add more here as needed */
+        /* These two variables are used for thread join 
+         * parent_waiting is the actual thread that's waitng for its child.
+         * parent_sem is the semaphore to V() to wake up sleeping parent 
+         */
+        struct thread * parent_waiting;
+        struct semaphore * parent_sem;
 };
 
 /*
@@ -147,6 +153,14 @@ int thread_fork(const char *name, struct proc *proc,
                 void (*func)(void *, unsigned long),
                 void *data1, unsigned long data2);
 
+/* Very similar to fork except it returns a thread structure instead of an int.
+ * returns NULL in case of errors. 
+ * Besides normal fork functionality, sets parent_thread in forked child thread 
+ */
+struct thread* thread_fork_with_possible_join(const char * name, struct proc *proc,
+                                   void (*entrypoint)(void *data1, unsigned long data2),
+                                   void *data1, unsigned long data2);
+
 /*
  * Cause the current thread to exit.
  * Interrupts need not be disabled.
@@ -160,6 +174,10 @@ __DEAD void thread_exit(void);
  */
 void thread_yield(void);
 
+/*
+ * Have a parent thread wait for child thread to finish.
+ */
+void thread_join(struct thread * to_join);
 /*
  * Reshuffle the run queue. Called from the timer interrupt.
  */
